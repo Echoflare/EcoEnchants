@@ -1,0 +1,41 @@
+name: build
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Clean Build
+        run: ./gradlew clean build
+      - uses: "actions/upload-artifact@v3"
+        with:
+          name: "EcoEnchants"
+          path: "build/libs/*.jar"
+      - name: Set outputs
+        id: short_sha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "build/libs/*.jar"
+          body: |
+            Commit ${{ steps.short_sha.outputs.sha_short }}
+            This release is automatically compiled by GitHub Actions
+          name: EcoEnchants Automation Compile ${{ steps.short_sha.outputs.sha_short }}
+          draft: false
+          tag_name: commit-${{ steps.short_sha.outputs.sha_short }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_KEY }}
+          GITHUB_REPOSITORY: Echoflare/EcoEnchants
